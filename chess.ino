@@ -11,9 +11,6 @@ Event event(white, lift, knight, white, D, 3);
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  board.printSerial();
-  Serial.println();
-  Serial.println();
 }
 
 void loop() {
@@ -22,6 +19,6 @@ void loop() {
   Serial.println();
   Serial.println();
   event.printSerial();
-  Serial.print(event.rank);
+  Serial.println();
   delay(10000);
 }
