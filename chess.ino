@@ -1,6 +1,7 @@
 #include <board.h>
 #include <enum.h>
 #include <event.h>
+#include <move.h>
 #include <piece.h>
 #include <square.h>
 #include <state.h>
@@ -8,25 +9,43 @@
 
 //#define LED
 
-Board board;
-Event prevEvent;
-Event currEvent;
-Player turn = white;
-State BLACK_STATE = RED;
-State WHITE_STATE = GREEN;
-bool stateChanged = false;
-PieceType promoSelection = empty;
-
 // function prototypes
-State stateOfCurrPlayer();
 void setupStateLEDs();
 void updateStateLEDs();
+
+State stateOfCurrPlayer();
 void printBoardState();
 void pollCurrEvent();
 
-void setup() {
+// MAIN CODE + VARIABLES
+// variables to track board state
+Board board;
+Event prevEvent;
+Event currEvent;
+// variables to track game state
+Player turn;
+State BLACK_STATE;
+State WHITE_STATE;
+bool stateChanged;
+PieceType promoType;
+// variables to track move info
+Move move;
+Square prevBoard[9][9];
+bool isCastle;
+
+void setup() {  
   // put your setup code here, to run once:
   Serial.begin(9600);
+
+  // set up game variables
+  turn = white;
+  BLACK_STATE = RED;
+  WHITE_STATE = GREEN;
+  stateChanged = false;
+  promoType = empty;
+  copyBoard(board.board, prevBoard);
+  isCastle = false;
+  
 #ifdef LED
   setupStateLEDs();
 #endif
@@ -58,8 +77,23 @@ void loop() {
   State prevState = stateOfCurrPlayer();
   WHITE_STATE = nextState(WHITE_STATE, currEvent, prevEvent);
   BLACK_STATE = nextState(BLACK_STATE, currEvent, prevEvent);
+
+  // check for castle
+  if (stateOfCurrPlayer() == CASTLE2){
+    isCastle = true;
+  }
   
+  // check for end of move
   if (WHITE_STATE == RED && BLACK_STATE == RED){
+    // extract move info
+    move.update(board.board, prevBoard, turn, isCastle);
+    Serial.println(move.getLongAlgebraicNotation());
+    Serial.println(move.getUCINotation());
+    Serial.println();
+    move.reset();
+    copyBoard(board.board, prevBoard); // copy current board into prevBoard
+
+    // switch turns
     if (turn == white){
       turn = black;
       BLACK_STATE = GREEN;
@@ -76,17 +110,19 @@ void loop() {
   // update prevEvent
   stateChanged = (stateOfCurrPlayer() != prevState);
   updatePrevEvent(currEvent, prevEvent, stateOfCurrPlayer(), stateChanged);
-
 }
 
 /*
- _   _  _____ _     ______ ___________  _____ 
-| | | ||  ___| |    | ___ \  ___| ___ \/  ___|
-| |_| || |__ | |    | |_/ / |__ | |_/ /\ `--. 
-|  _  ||  __|| |    |  __/|  __||    /  `--. \
-| | | || |___| |____| |   | |___| |\ \ /\__/ /
-\_| |_/\____/\_____/\_|   \____/\_| \_|\____/ 
 
+ /$$   /$$ /$$$$$$$$ /$$       /$$$$$$$  /$$$$$$$$ /$$$$$$$   /$$$$$$ 
+| $$  | $$| $$_____/| $$      | $$__  $$| $$_____/| $$__  $$ /$$__  $$
+| $$  | $$| $$      | $$      | $$  \ $$| $$      | $$  \ $$| $$  \__/
+| $$$$$$$$| $$$$$   | $$      | $$$$$$$/| $$$$$   | $$$$$$$/|  $$$$$$ 
+| $$__  $$| $$__/   | $$      | $$____/ | $$__/   | $$__  $$ \____  $$
+| $$  | $$| $$      | $$      | $$      | $$      | $$  \ $$ /$$  \ $$
+| $$  | $$| $$$$$$$$| $$$$$$$$| $$      | $$$$$$$$| $$  | $$|  $$$$$$/
+|__/  |__/|________/|________/|__/      |________/|__/  |__/ \______/ 
+                                                                      
  */
 
 State stateOfCurrPlayer(){
@@ -146,7 +182,7 @@ void printBoardState(){
   // print piece in hand
   if (prevEvent.action == lift){
     char c = prevEvent.piece.type;
-    if (stateOfCurrPlayer() == PROMO3) c = promoSelection;
+    if (stateOfCurrPlayer() == PROMO3) c = promoType;
     if (prevEvent.piece.color == black) c += 32;
     Serial.println("Piece in hand: " + String(c));
     Serial.println();
@@ -164,10 +200,10 @@ void pollCurrEvent(){
   currEvent = board.pollEvent(stateOfCurrPlayer(), prevEvent, turn);
   // check if event is promotion
   if (currEvent.promotion != empty){
-    promoSelection = currEvent.promotion; // change this to piece in hand
+    promoType = currEvent.promotion; // change this to piece in hand
   }
   // check if even
   if (stateOfCurrPlayer() == PROMO3){ // move into pollEvent
-    currEvent.piece.type = promoSelection;
+    currEvent.piece.type = promoType;
   }
 }
