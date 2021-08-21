@@ -27,6 +27,7 @@ void updateStateLEDs();
 State stateOfCurrPlayer();
 void printBoardState();
 void pollCurrEvent();
+void sendMoveToPi(const String& uci);
 
 // MAIN CODE + VARIABLES
 // variables to track board state
@@ -58,7 +59,7 @@ void setup() {
   lcd.clear();
 }
 
-void loop() {
+void loop() {  
   // print board
   Serial.println("--------------------------------------------------------");
   printBoardState();
@@ -89,6 +90,8 @@ void loop() {
     move.update(board.board, prevBoard, turn, isCastle);
     String algebraic = move.getLongAlgebraicNotation();
     String UCI = move.getUCINotation();
+    sendMoveToPi(UCI);
+    
     Serial.println(algebraic);
     Serial.println(UCI);
     Serial.println();
@@ -213,4 +216,14 @@ void pollCurrEvent(){
   if (stateOfCurrPlayer() == PROMO3){ // move into pollEvent
     currEvent.piece.type = promoType;
   }
+}
+
+void sendMoveToPi(const String& uci){
+  Serial.print("M: ");
+  Serial.println(uci);
+}
+
+String getMoveFromPi(){
+  while (!Serial.available());
+  return Serial.readString();
 }
