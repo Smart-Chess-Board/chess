@@ -7,7 +7,18 @@
 #include <state.h>
 #include <utility.h>
 
-//#define LED
+#include <LiquidCrystal.h>
+
+const int rs = 7, en = 6, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+// define pins
+#define B_R A5
+#define B_Y A4
+#define B_G A3
+#define W_R 11
+#define W_Y 12
+#define W_G 13
 
 // function prototypes
 void setupStateLEDs();
@@ -45,13 +56,20 @@ void setup() {
   promoType = empty;
   copyBoard(board.board, prevBoard);
   isCastle = false;
-  
-#ifdef LED
   setupStateLEDs();
-#endif
+  updateStateLEDs();
+
+  lcd.begin(16, 2);
+  lcd.clear();
+
 }
 
 void loop() {
+
+  //lcd.setCursor(0, 1);
+  // print the number of seconds since reset:
+  //lcd.print(millis() / 1000);
+  
   // print board
   Serial.println("--------------------------------------------------------");
   printBoardState();
@@ -87,9 +105,18 @@ void loop() {
   if (WHITE_STATE == RED && BLACK_STATE == RED){
     // extract move info
     move.update(board.board, prevBoard, turn, isCastle);
-    Serial.println(move.getLongAlgebraicNotation());
-    Serial.println(move.getUCINotation());
+    String algebraic = move.getLongAlgebraicNotation();
+    String UCI = move.getUCINotation();
+    Serial.println(algebraic);
+    Serial.println(UCI);
     Serial.println();
+    
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(algebraic);
+    lcd.setCursor(0, 1);
+    lcd.print(UCI);
+    
     move.reset();
     copyBoard(board.board, prevBoard); // copy current board into prevBoard
 
@@ -103,10 +130,8 @@ void loop() {
       WHITE_STATE = GREEN;
     }
   }
-#ifdef LED
-  setupStateLEDs();
-#endif
-
+  updateStateLEDs();
+  
   // update prevEvent
   stateChanged = (stateOfCurrPlayer() != prevState);
   updatePrevEvent(currEvent, prevEvent, stateOfCurrPlayer(), stateChanged);
@@ -132,47 +157,47 @@ State stateOfCurrPlayer(){
 
 void setupStateLEDs(){
   // white
-  pinMode(13, OUTPUT); // green
-  pinMode(12, OUTPUT); // yellow
-  pinMode(11, OUTPUT); // red
+  pinMode(W_G, OUTPUT); // green
+  pinMode(W_Y, OUTPUT); // yellow
+  pinMode(W_R, OUTPUT); // red
   //black
-  pinMode(6, OUTPUT); // green
-  pinMode(5, OUTPUT); // yellow
-  pinMode(4, OUTPUT); // red
+  pinMode(B_G, OUTPUT); // green
+  pinMode(B_Y, OUTPUT); // yellow
+  pinMode(B_R, OUTPUT); // red
 }
 
 void updateStateLEDs(){
   // set LED
   if (WHITE_STATE == GREEN){
-    digitalWrite(13, HIGH);
-    digitalWrite(12, LOW);
-    digitalWrite(11, LOW);
+    digitalWrite(W_G, HIGH);
+    digitalWrite(W_Y, LOW);
+    digitalWrite(W_R, LOW);
   }
   else if (WHITE_STATE == RED){
-    digitalWrite(13, LOW);
-    digitalWrite(12, LOW);
-    digitalWrite(11, HIGH);
+    digitalWrite(W_G, LOW);
+    digitalWrite(W_Y, LOW);
+    digitalWrite(W_R, HIGH);
   }
   else{
-    digitalWrite(13, LOW);
-    digitalWrite(12, HIGH);
-    digitalWrite(11, LOW);
+    digitalWrite(W_G, LOW);
+    digitalWrite(W_Y, HIGH);
+    digitalWrite(W_R, LOW);
   }
-
+  
   if (BLACK_STATE == GREEN){
-    digitalWrite(6, HIGH);
-    digitalWrite(5, LOW);
-    digitalWrite(4, LOW);
+    digitalWrite(B_G, HIGH);
+    digitalWrite(B_Y, LOW);
+    digitalWrite(B_R, LOW);
   }
   else if (BLACK_STATE == RED){
-    digitalWrite(6, LOW);
-    digitalWrite(5, LOW);
-    digitalWrite(4, HIGH);
+    digitalWrite(B_G, LOW);
+    digitalWrite(B_Y, LOW);
+    digitalWrite(B_R, HIGH);
   }
   else{
-    digitalWrite(6, LOW);
-    digitalWrite(5, HIGH);
-    digitalWrite(4, LOW);
+    digitalWrite(B_G, LOW);
+    digitalWrite(B_Y, HIGH);
+    digitalWrite(B_R, LOW);
   }
 }
 
