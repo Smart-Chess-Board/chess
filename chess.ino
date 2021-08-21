@@ -33,7 +33,6 @@ void setup() {
 }
 
 void loop() {
-  
   // print board
   Serial.println("--------------------------------------------------------");
   printBoardState();
@@ -79,6 +78,16 @@ void loop() {
   updatePrevEvent(currEvent, prevEvent, stateOfCurrPlayer(), stateChanged);
 
 }
+
+/*
+ _   _  _____ _     ______ ___________  _____ 
+| | | ||  ___| |    | ___ \  ___| ___ \/  ___|
+| |_| || |__ | |    | |_/ / |__ | |_/ /\ `--. 
+|  _  ||  __|| |    |  __/|  __||    /  `--. \
+| | | || |___| |____| |   | |___| |\ \ /\__/ /
+\_| |_/\____/\_____/\_|   \____/\_| \_|\____/ 
+
+ */
 
 State stateOfCurrPlayer(){
     if (turn == black) return BLACK_STATE;
