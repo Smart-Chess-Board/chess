@@ -33,29 +33,24 @@ void pollCurrEvent();
 Board board;
 Event prevEvent;
 Event currEvent;
+
 // variables to track game state
-Player turn;
-State BLACK_STATE;
-State WHITE_STATE;
-bool stateChanged;
-PieceType promoType;
+Player turn = white;
+State BLACK_STATE = RED;
+State WHITE_STATE = GREEN;
+bool stateChanged = false;
+PieceType promoType = empty;
 // variables to track move info
 Move move;
 Square prevBoard[9][9];
-bool isCastle;
+bool isCastle = false;
 
 void setup() {  
   // put your setup code here, to run once:
   Serial.begin(9600);
 
   // set up game variables
-  turn = white;
-  BLACK_STATE = RED;
-  WHITE_STATE = GREEN;
-  stateChanged = false;
-  promoType = empty;
   copyBoard(board.board, prevBoard);
-  isCastle = false;
   setupStateLEDs();
   updateStateLEDs();
 
@@ -80,17 +75,10 @@ void loop() {
   pollCurrEvent();
   currEvent.printSerial();
   Serial.println();
-
-  // debugging output
-  Serial.print("currEvent: ");
-  currEvent.printSerial();
-  Serial.print("prevEvent: ");
-  prevEvent.printSerial();
-  Serial.println();
   
   // update board
   board.update(currEvent);
-
+ 
   // update states
   State prevState = stateOfCurrPlayer();
   WHITE_STATE = nextState(WHITE_STATE, currEvent, prevEvent);
