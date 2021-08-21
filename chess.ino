@@ -59,11 +59,6 @@ void setup() {
 }
 
 void loop() {
-
-  //lcd.setCursor(0, 1);
-  // print the number of seconds since reset:
-  //lcd.print(millis() / 1000);
-  
   // print board
   Serial.println("--------------------------------------------------------");
   printBoardState();
