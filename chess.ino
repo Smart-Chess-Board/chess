@@ -13,12 +13,12 @@ const int rs = 7, en = 6, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 
 // define pins
-#define B_R A5
-#define B_Y A4
-#define B_G A3
-#define W_R 11
-#define W_Y 12
-#define W_G 13
+#define W_R A5
+#define W_Y A4
+#define W_G A3
+#define B_R 11
+#define B_Y 12
+#define B_G 13
 
 // function prototypes
 void setupStateLEDs();
@@ -63,13 +63,12 @@ void loop() {
   // print board
   Serial.println("--------------------------------------------------------");
   printBoardState();
-  Serial.println();
 
   // get next event;
   Serial.println("Enter event:");
-  pollCurrEvent();
+  //pollCurrEvent();
+  getEventFromPi();
   currEvent.printSerial();
-  Serial.println();
   
   // update board
   board.update(currEvent);
@@ -94,7 +93,6 @@ void loop() {
     
     Serial.println(algebraic);
     Serial.println(UCI);
-    Serial.println();
     
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -218,12 +216,25 @@ void pollCurrEvent(){
   }
 }
 
+void getEventFromPi(){
+  String input = getInputFromPi();
+  currEvent = board.getEvent(input, stateOfCurrPlayer(), prevEvent, turn);
+  // check if event is promotion
+  if (currEvent.promotion != empty){
+    promoType = currEvent.promotion; // change this to piece in hand
+  }
+  // check if even
+  if (stateOfCurrPlayer() == PROMO3){ // move into pollEvent
+    currEvent.piece.type = promoType;
+  }
+}
+
 void sendMoveToPi(const String& uci){
   Serial.print("M: ");
   Serial.println(uci);
 }
 
-String getMoveFromPi(){
+String getInputFromPi(){
   while (!Serial.available());
   return Serial.readString();
 }
