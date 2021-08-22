@@ -23,6 +23,8 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 // function prototypes
 void setupStateLEDs();
 void updateStateLEDs();
+void showLastMove(String uci);
+void showAIMove(String uci);
 
 State stateOfCurrPlayer();
 void printBoardState();
@@ -41,10 +43,15 @@ State BLACK_STATE = RED;
 State WHITE_STATE = GREEN;
 bool stateChanged = false;
 PieceType promoType = empty;
+
 // variables to track move info
 Move move;
 Square prevBoard[9][9];
 bool isCastle = false;
+
+// variables for chess AI
+bool isWhiteAI;
+bool isBlackAI;
 
 void setup() {  
   // put your setup code here, to run once:
@@ -57,9 +64,28 @@ void setup() {
 
   lcd.begin(16, 2);
   lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Last move: ");
+  lcd.setCursor(0, 1);
+  lcd.print("AI move: ");
+
+  // set up game state
+  // TODO: this should be done with switches
+  String input = getInputFromPi();
+  if (input == "y" || input == "yes") isWhiteAI = false;    
+  else isWhiteAI = true;
+  
+  input = getInputFromPi();
+  if (input == "y" || input == "yes")isBlackAI = false;    
+  else isBlackAI = true;
+  
+  if (isWhiteAI){
+    String bestMove = getInputFromPi();
+    showAIMove(bestMove);
+  }
 }
 
-void loop() {  
+void loop() {
   // print board
   Serial.println("--------------------------------------------------------");
   printBoardState();
@@ -93,12 +119,7 @@ void loop() {
     
     Serial.println(algebraic);
     Serial.println(UCI);
-    
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(algebraic);
-    lcd.setCursor(0, 1);
-    lcd.print(UCI);
+    showLastMove(UCI);
     
     move.reset();
     copyBoard(board.board, prevBoard); // copy current board into prevBoard
@@ -112,8 +133,17 @@ void loop() {
       turn = white;
       WHITE_STATE = GREEN;
     }
+    updateStateLEDs();
+    
+    // request move from stockfish if applicable
+    if ((turn == white && isWhiteAI) || (turn == black && isBlackAI)){
+      String bestMove = getInputFromPi();
+      showAIMove(bestMove);
+    }
   }
-  updateStateLEDs();
+  else{
+    updateStateLEDs();
+  }
   
   // update prevEvent
   stateChanged = (stateOfCurrPlayer() != prevState);
@@ -184,6 +214,15 @@ void updateStateLEDs(){
   }
 }
 
+void showLastMove(String uci){
+  lcd.setCursor(11, 0);
+  lcd.print(uci);
+}
+void showAIMove(String uci){
+  lcd.setCursor(11, 1);
+  lcd.print(uci);
+}
+
 void printBoardState(){
   board.printSerial();
 
@@ -236,5 +275,7 @@ void sendMoveToPi(const String& uci){
 
 String getInputFromPi(){
   while (!Serial.available());
-  return Serial.readString();
+  String ret = Serial.readString();
+  Serial.println("ACK: " + ret);
+  return ret;
 }
